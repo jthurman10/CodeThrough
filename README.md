@@ -1,9 +1,9 @@
 # CodeThrough
 Week 7 Code Through
 
-Package dependencies:
+Package dependencies:<br>
 dplyr<br>
-pander
-magrittr
-dict
+pander<br>
+magrittr<br>
+dict<br>
 kableExtra
