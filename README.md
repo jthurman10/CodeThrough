@@ -1,4 +1,4 @@
-# CodeThrough
+# The Dict Package
 Week 7 Code Through
 
 Package dependencies:<br>
