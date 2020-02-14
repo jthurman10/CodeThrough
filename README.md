@@ -2,7 +2,7 @@
 Week 7 Code Through
 
 Package dependencies:
-dplyr\n
+dplyr<br>
 pander
 magrittr
 dict
