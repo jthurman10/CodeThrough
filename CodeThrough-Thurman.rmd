@@ -1,0 +1,96 @@
+---
+title: "Dictionary Code Through"
+author: "Justin Thurman"
+date: "2/14/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library( dplyr )
+library( pander )
+library( magrittr )
+library( dict )
+library( kableExtra )
+```
+<style type="text/css">
+.main-container {
+  max-width: 1800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+```{r data, echo=FALSE}
+sales <- data.frame( Item = c( "Widget 1", "Widget 2", "Widget 3" ), `Quantity Sold` = c(5, 2, 8), `Price Per Unit` = c(17, 51, 20) ) %>% mutate( Total.Revenue = Quantity.Sold * Price.Per.Unit )
+parts <- data.frame( Item = c( "Widget 1", "Widget 2", "Widget 3" ), Part.a = c(2, 2, 6), Part.b = c(5, 2, 9), Part.c = c(11, 8, 4) )
+purchases <- data.frame( Part = c( "Part.a", "Part.b", "Part.c" ), Average.Buy.Price = c(5,4,7) )
+```
+
+## Why Dictionaries?
+
+Suppose you're working for a company that manufactures various kinds of widgets. You know that the construction of widget 1 requires 2 of part.a, widget 2 requires 1 of part.a, 1 of part.b, and 2 of part.c, and widget 3 requires 2 of part.b and 1 of part.c. And you have received the following tables.
+
+**Total sales:**
+```{r sales, echo=FALSE}
+sales %>% pander()
+```
+
+**Average purchasing price for each part:**
+```{r purchases, echo=FALSE}
+purchases %>% pander()
+```
+
+So you know how many widgets were sold and at what prices, what parts are required to make those widgets, and how much your company paid per part. You have been tasked with calculating the average profit per widget produced. To do that, we need to determine each widget's total cost.
+
+There are a number of ways this could be accomplished, but for this code through, I'm going to use a package that borrows a class of object from Python: the dictionary. Dictionaries are objects that store key-value pairs, and they can be referenced by either. The best way to get a feel for it is probably to see it in action.
+
+```{r dictionary}
+d <- dict() # creating an empty dictionary
+d[["Widget 1"]] <- c("Part.a", "Part.a") # this code creates a key within the dictionary, "Widget 1", and assigns that key the value c("Part.a", "Part.a"). Part.a is listed twice because we stipulated earlier that widget 1 is created with 2 of part.a.
+# Now to do the same for the other widgets
+d[["Widget 2"]] <- c("Part.a", "Part.b", "Part.c", "Part.c")
+d[["Widget 3"]] <- c("Part.b", "Part.b", "Part.c")
+```
+Now we have created our dictionary that essentially serves as a recipe book for each widget that we produce. We can review the contents of our dictionary with the keys, values, and items functions.
+```{r}
+d$keys() # this function displays just the keys in our dictionary
+d$values() # this function displays just the values
+d$items() # this function displays both keys and values
+```
+But the real value of dictionaries comes from referencing a specific key and getting that key's value in return.
+```{r}
+d[["Widget 1"]]
+d[["Widget 2"]]
+d[["Widget 3"]]
+```
+Now we have a convenient way to calculate a widget's cost.
+
+## Working With Dictionaries
+
+First we create a vector of the widget names.
+```{r}
+widgets <- as.character(sales[ , 1])
+print( widgets )
+```
+
+Then we use nested for loops to build our cost vector. The notation is a little complicated, but the concept is fairly straightforward.
+```{r}
+
+widgets.cost.vector <- numeric() # first we create an empty numeric vector. This will be a vector that contains the total cost for each widget, in order.
+
+for (i in widgets){ # then we begin the for loop. First, we iterate over every element in the widgets vector -- that is, the name of every widget
+    widget.cost <- 0 # we create a numeric object that will represent the cost of each widget. This is done inside the for loop so that this value is reset for each widget
+    parts <- d[[i]] # here we use our dictionary: we plug the name of the widget we are currently working with, represented by i, which we defined at the start of the for loop, into the dictionary's key argument, and we get the value in return, which we assign to the object 'parts.' In other words, 'parts' now contains a list of the parts used to make the current widget
+    for (k in parts){ # next we must iterate over every individual part (represented by k) within the parts vector we just created
+        widget.cost <- widget.cost + purchases$Average.Buy.Price[ purchases$Part == k ] # we retrieve the cost of each part by subsetting the purchases table and then add that part's cost onto the widget cost vector
+    } # this is the end of the embedded for loop, so 'widget.cost' now contains the total cost of the widget represented by i in the outer for loop
+    widgets.cost.vector <- c( widgets.cost.vector, widget.cost ) # we concatenate this cost to the total widgets cost vector, and then the for loop repeats until we have iterated overy every widget
+}
+```
+Now we just have to add the results to our table with some straightforward mutation.
+```{r}
+modified.sales <- sales %>% mutate( Unit.Profit = Price.Per.Unit - widgets.cost.vector ) %>% # first we create the unit profit value by subtracting widget cost from widget selling price
+    mutate( Total.Profit = Unit.Profit * Quantity.Sold ) # then we create a total profit value by multiplying unit profit by quantity sold
+modified.sales %>% kable() %>% kable_styling(bootstrap_options = c("striped", "hover"))
+```
+And there you have it! While a dictionary was probably overkill with this small of a dataset, the advantage is its scalability. Any number of widget recipes can be added to the dictionary, and so long as those widgets have an associated sale price, and the parts have an associated buy price, this method will calculate the profits without any changes to the underlying code. All you would have to do is add a new recipe to the dictionary.
